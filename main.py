@@ -1,7 +1,7 @@
 from FlightSearch import FlightSearch
+import json
 
 test = FlightSearch()
-#test.get_token()
+test.get_token()
+all_data = test.get_flight( "OTP", "IST", "2025-04-20", 1)
 
-
-test.get_flight("NpMTgV8myO0agZC9oTxVgnV9qnZt", "OTP", "IST", "2025-04-20", 1)
