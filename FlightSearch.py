@@ -8,8 +8,8 @@ class FlightSearch:
 
     def __init__(self):
         self.history = [] #It's going to gather all the history flight's
-        self.departures = ""
-        self.arrivals = ""
+        self.departures = []
+        self.returns = []
         self.access_token = {}
 
 
@@ -30,13 +30,14 @@ class FlightSearch:
 
 
 
-    def get_flight(self, departure, arrival, departure_date, adults):
+    def get_flight(self, departure, arrival, departure_date,adults, return_date=None):
         URL = "https://test.api.amadeus.com/v2/shopping/flight-offers"
         headers = {"Authorization":f"Bearer {self.access_token}"}
         params = {
             "originLocationCode": departure,
             "destinationLocationCode": arrival,
             "departureDate": departure_date,
+            "returnDate": return_date,
             "adults": adults,
         }
         try:
@@ -48,16 +49,45 @@ class FlightSearch:
                 with open('data.json', 'r', encoding='utf-8') as f:
                     data = json.load(f)
                     for next_id, element in enumerate(data['data']):
-                        print(f'''\nFlight id: {element["id"]}\n
-                        Departure from: {element['itineraries'][0]["segments"][0]["arrival"]["iataCode"]}\n
-                        Arrival from: {element['itineraries'][0]["segments"][0]["departure"]["at"]}\n
-                        Departure time: {element['itineraries'][0]["segments"][0]["departure"]["at"]}\n
-                        Arrival time: {element['itineraries'][0]["segments"][0]["arrival"]["at"]}\n
-                        Price: {element['price']['total']}\n''', end='-' * 50)
+
+                        #The new_dict stores all the necessary data from the json and append it to the self.departure list
+                        departure_dict = {
+                            "Departure":element['itineraries'][0]["segments"][0]["departure"]["iataCode"],
+                            "Arrival":element['itineraries'][0]["segments"][0]["arrival"]["iataCode"],
+                             "Departure time":element['itineraries'][0]["segments"][0]["departure"]["at"],
+                             "Arrival time":element['itineraries'][0]["segments"][0]["arrival"]["at"],
+                             "Flight ID":[element['itineraries'][0]["segments"][0]["carrierCode"], element['itineraries'][0]["segments"][0]["number"]]
+                        }
+                        self.departures.append(departure_dict)
+
+                        returns_dict = {
+                            "Departure": element['itineraries'][1]["segments"][0]["departure"]["iataCode"],
+                            "Arrival": element['itineraries'][1]["segments"][0]["arrival"]["iataCode"],
+                            "Departure time": element['itineraries'][1]["segments"][0]["departure"]["at"],
+                            "Arrival time": element['itineraries'][1]["segments"][0]["arrival"]["at"],
+                            "Flight ID": [element['itineraries'][1]["segments"][0]["carrierCode"],element['itineraries'][1]["segments"][0]["number"]]
+                        }
+                        self.returns.append(returns_dict)
+
+                        print(f'''\nFlight id: {element["id"]}
+                            Departure from: {element['itineraries'][0]["segments"][0]["departure"]["iataCode"]}
+                            Arrival to: {element['itineraries'][0]["segments"][0]["arrival"]["iataCode"]}
+                            Departure time: {element['itineraries'][0]["segments"][0]["departure"]["at"]}
+                            Arrival time: {element['itineraries'][0]["segments"][0]["arrival"]["at"]}
+                            Flight ID: {element['itineraries'][0]["segments"][0]["carrierCode"]} {element['itineraries'][0]["segments"][0]["number"]}
+                            
+                            
+                            Departure from: {element['itineraries'][1]["segments"][0]["departure"]["iataCode"]}
+                            Arrival to: {element['itineraries'][1]["segments"][0]["arrival"]["iataCode"]}
+                            Departure time: {element['itineraries'][1]["segments"][0]["departure"]["at"]}
+                            Arrival time: {element['itineraries'][1]["segments"][0]["arrival"]["at"]}
+                            Flight ID: {element['itineraries'][1]["segments"][0]["carrierCode"]} {element['itineraries'][1]["segments"][0]["number"]}
+                            Price: {element['price']['total']}\n\n
+''', end='-' * 50)
             else:
                 print(f"Eroare la cererea GET: {response.status_code} - {response.text}")
 
         except requests.exceptions.RequestException as e:
             print(f"Eroare la cererea GET: {e}.")
-            #TODO Sa idenfic numarul zborului dorit, sa fac o functie care sa-mi filtreze zbourile returnare si sa-mi trimita mail cu zborurile
-            #gasite pana intr-un anumit pret
+
+
