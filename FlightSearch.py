@@ -1,13 +1,15 @@
 import json
 import requests
+from Notifications import Notification
 
 
 class FlightSearch:
     '''This class is going to take all the flights from the API and store them'''
 
 
-    def __init__(self):
-        self.history = [] #It's going to gather all the history flight's
+    def __init__(self, email):
+        self.email = Notification(email)
+        self.track_flight = []
         self.departures = []
         self.returns = []
         self.access_token = {}
@@ -56,7 +58,8 @@ class FlightSearch:
                             "Arrival":element['itineraries'][0]["segments"][0]["arrival"]["iataCode"],
                              "Departure time":element['itineraries'][0]["segments"][0]["departure"]["at"],
                              "Arrival time":element['itineraries'][0]["segments"][0]["arrival"]["at"],
-                             "Flight ID":[element['itineraries'][0]["segments"][0]["carrierCode"], element['itineraries'][0]["segments"][0]["number"]]
+                             "Flight ID":[element['itineraries'][0]["segments"][0]["carrierCode"], element['itineraries'][0]["segments"][0]["number"]],
+                             "Price": float(element['price']['total'])
                         }
                         self.departures.append(departure_dict)
 
@@ -65,7 +68,8 @@ class FlightSearch:
                             "Arrival": element['itineraries'][1]["segments"][0]["arrival"]["iataCode"],
                             "Departure time": element['itineraries'][1]["segments"][0]["departure"]["at"],
                             "Arrival time": element['itineraries'][1]["segments"][0]["arrival"]["at"],
-                            "Flight ID": [element['itineraries'][1]["segments"][0]["carrierCode"],element['itineraries'][1]["segments"][0]["number"]]
+                            "Flight ID": [element['itineraries'][1]["segments"][0]["carrierCode"],element['itineraries'][1]["segments"][0]["number"]],
+                            "Price": float(element['price']['total'])
                         }
                         self.returns.append(returns_dict)
 
@@ -91,3 +95,21 @@ class FlightSearch:
             print(f"Eroare la cererea GET: {e}.")
 
 
+
+    def budget_flight(self, param):
+       budget = float(param)
+       try:
+           for departure, returns in zip(self.departures, self.returns):
+               if 'Price' in departure and 'Price' in returns:
+                   total_price = float(departure['Price']) + float(returns['Price'])
+                   if total_price <= budget:
+                       self.track_flight.append((departure, returns))
+               else:
+                   print("Key 'Price' not found in departure or returns dictionary.")
+
+           self.email.send_mail(self.track_flight)
+           print("An email was sent successfully.")
+
+       except Exception as e:
+           print(f"An error has occurred: {e}.")
+           #TODO To solve list indices must be integers or slices, not str error
